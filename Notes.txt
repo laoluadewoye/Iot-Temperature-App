@@ -1,0 +1,75 @@
+Chat GPT Response:
+
+Besides temperature and humidity, weather instruments can measure several other aspects of weather, including:
+
+1. **Atmospheric Pressure** – Measured by a **barometer**, indicates changes in weather patterns.
+2. **Wind Speed and Direction** – Measured by an **anemometer** and a **wind vane**.
+3. **Precipitation** – Measured by a **rain gauge**, includes rainfall, snowfall, sleet, and hail.
+4. **Solar Radiation** – Measured by a **pyranometer**, indicates sunlight intensity.
+5. **Cloud Cover and Type** – Observed using **ceilometers** or satellites.
+6. **Dew Point** – Indicates the temperature at which air becomes saturated, measured with **hygrometers**.
+7. **Visibility** – Measured using **visibility sensors** or manual observations.
+8. **UV Index** – Measured with a **UV radiometer**, indicates ultraviolet radiation levels.
+9. **Soil Moisture** – Measured by a **soil moisture sensor**, important for agriculture.
+10. **Evaporation Rate** – Measured by an **evaporation pan**, useful in hydrology.
+11. **Lightning Activity** – Detected using **lightning detectors** or radar systems.
+
+
+Sources:
+
+https://ghrc.nsstc.nasa.gov/uso/ds_docs/ldar/ldar_dataset.html
+https://en.wikipedia.org/wiki/Lightning_detector
+https://weatherscientific.com/blogs/weather-scientific-blogs/7-types-of-weather-instruments
+https://blog.otthydromet.com/en/what-is-the-uv-index-and-how-to-calculate-it/
+https://en.wikipedia.org/wiki/Ultraviolet_index
+https://lightenify.com/how-to-measure-uv-light/
+https://solar-energy.technology/what-is-solar-energy/solar-radiation/measurement
+https://isocalnorthamerica.com/solar-radiation-measurement/
+https://www.youtube.com/watch?v=aK6sJDOn2Hc
+
+
+if __name__ == '__main__':
+    # Connect to the database
+    test_db_conn = connect(
+        host='localhost', database='testdb', user='testdb_gen', password='12345678', port=5432
+    )
+
+    # Create a stop event
+    test_stop_event = Event()
+
+    # Start the data generation thread
+    test_data_generator_thread = Thread(target=data_generator, args=(test_db_conn, test_stop_event,))
+    test_data_generator_thread.start()
+
+    # Wait 10 seconds
+    sleep(10)
+
+    # Stop the data generation thread
+    test_stop_event.set()
+    test_data_generator_thread.join()
+
+    # Close the connection
+    test_db_conn.close()
+
+
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/api/v1/web/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8081/api/v1/generator/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+Website page:
+Tabs:
+Real-time Dashboard
+Historical Trends
+
+
+
+
+

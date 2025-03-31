@@ -274,7 +274,8 @@ def main_data_gen_loop(stop_event: Event):
         env_db_host = getenv("DB_HOST")
         env_db_name = getenv("DB_NAME")
         env_db_user = getenv("DB_USER")
-        env_db_password = getenv("DB_PASSWORD")
+        env_db_password_file = getenv("DB_PASSWORD_FILE")
+        env_db_password = open(env_db_password_file).read().strip()
         env_db_port = getenv("DB_PORT")
     except KeyError:
         raise ValueError("The right environmental variables are not set.")

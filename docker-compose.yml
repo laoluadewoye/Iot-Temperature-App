@@ -26,9 +26,9 @@ services:
       timeout: 5s
       retries: 3
     entrypoint: |
-      /bin/bash -c "export POSTGRES_PASSWORD=\$(cat $POSTGRES_PASSWORD_FILE) && \
-      export DATA_GEN_PASSWORD=\$(cat $DATA_GEN_PASSWORD_FILE) && \
-      export WEB_VIEWER_PASSWORD=\$(cat $WEB_VIEWER_PASSWORD_FILE) && \
+      /bin/bash -c "export POSTGRES_PASSWORD=\$(cat \"\$POSTGRES_PASSWORD_FILE\") && \
+      export DATA_GEN_PASSWORD=\$(cat \"\$DATA_GEN_PASSWORD_FILE\") && \
+      export WEB_VIEWER_PASSWORD=\$(cat \"\$WEB_VIEWER_PASSWORD_FILE\") && \
       apt-get update && apt-get install -y gettext && \
       envsubst < /var/init-db.sql > /docker-entrypoint-initdb.d/init-db.sql && \
       docker-entrypoint.sh postgres"

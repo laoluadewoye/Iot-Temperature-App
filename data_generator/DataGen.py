@@ -233,7 +233,7 @@ def insert_data(conn: connection, current_step: dict) -> None:
             (utc_timestamp, current_step["uv_index"])
         )
         cur_cursor.execute(
-            "INSERT INTO precipitation_data (time_recorded, value_nm) VALUES (%s, %s);",
+            "INSERT INTO precipitation_data (time_recorded, value_nm_s) VALUES (%s, %s);",
             (utc_timestamp, current_step["precipitation"])
         )
         cur_cursor.execute('COMMIT;')

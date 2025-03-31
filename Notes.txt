@@ -68,8 +68,3 @@ Website page:
 Tabs:
 Real-time Dashboard
 Historical Trends
-
-
-
-
-

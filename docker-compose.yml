@@ -19,7 +19,7 @@ services:
       - iot_temp_web_viewer_password
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./init-db.sql:/app/init-db.sql
+      - ./init-db.sql:/var/init-db.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready", "--quiet", "--dbname=iot_temp_db", "--username=iot_temp_admin"]
       interval: 10s
@@ -30,7 +30,7 @@ services:
       export DATA_GEN_PASSWORD=\$(cat $DATA_GEN_PASSWORD_FILE) && \
       export WEB_VIEWER_PASSWORD=\$(cat $WEB_VIEWER_PASSWORD_FILE) && \
       apt-get update && apt-get install -y gettext && \
-      envsubst < /app/init-db.sql > /docker-entrypoint-initdb.d/init-db.sql && \
+      envsubst < /var/init-db.sql > /docker-entrypoint-initdb.d/init-db.sql && \
       docker-entrypoint.sh postgres"
 
   web_app:

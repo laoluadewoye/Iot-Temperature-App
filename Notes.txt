@@ -68,3 +68,16 @@ Website page:
 Tabs:
 Real-time Dashboard
 Historical Trends
+
+
+      - "/bin/sh"
+      - -ec
+      - |
+        export DATA_GEN_USER=iot_temp_data_gen
+        export DATA_GEN_PASSWORD=$(cat /run/secrets/iot_temp_data_gen_password | xargs)
+        export WEB_VIEWER_USER=iot_temp_web_viewer
+        export WEB_VIEWER_PASSWORD=$(cat /run/secrets/iot_temp_web_viewer_password | xargs)
+        apt-get update
+        apt-get install -y gettext
+        envsubst < /var/init-db.sql > /docker-entrypoint-initdb.d/init-db.sql
+        exec docker-entrypoint.sh postgres

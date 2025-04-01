@@ -6,8 +6,6 @@ services:
     ports:
       - "8000:5432"
     environment:
-      POSTGRES_DB: iot_temp_db
-      POSTGRES_USER: iot_temp_admin
       DATA_GEN_USER: iot_temp_data_gen
       WEB_VIEWER_USER: iot_temp_web_viewer
     secrets:
@@ -18,21 +16,21 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./init-db.sql:/var/init-db.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready", "--quiet", "--dbname=iot_temp_db", "--username=iot_temp_admin"]
+      test: ["CMD-SHELL", "pg_isready", "--quiet"]
       interval: 10s
       timeout: 5s
       retries: 3
     entrypoint:
       - "/bin/sh"
-      - -ecx
+      - -ec
       - |
-          POSTGRES_PASSWORD=$(cat /run/secrets/iot_temp_admin_password | xargs)
-          DATA_GEN_PASSWORD=$(cat /run/secrets/iot_temp_data_gen_password | xargs)
-          WEB_VIEWER_PASSWORD=$(cat /run/secrets/iot_temp_web_viewer_password | xargs)
-          apt-get update
-          apt-get install -y gettext
-          envsubst < /var/init-db.sql > /docker-entrypoint-initdb.d/init-db.sql
-          exec docker-entrypoint.sh postgres
+        export POSTGRES_PASSWORD=$(cat /run/secrets/iot_temp_admin_password | xargs)
+        export DATA_GEN_PASSWORD=$(cat /run/secrets/iot_temp_data_gen_password | xargs)
+        export WEB_VIEWER_PASSWORD=$(cat /run/secrets/iot_temp_web_viewer_password | xargs)
+        apt-get update
+        apt-get install -y gettext
+        envsubst < /var/init-db.sql > /docker-entrypoint-initdb.d/init-db.sql
+        exec docker-entrypoint.sh postgres
 
   web_app:
     build: ./web_app

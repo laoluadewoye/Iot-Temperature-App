@@ -1,78 +1,23 @@
 services:
   postgres:
     image: postgres:latest
-    container_name: PostgreSQL_IoT_Weather_DB
-    restart: unless-stopped
+    container_name: PostgreSQL-IoT-Weather-DB
+    restart: always
     ports:
       - "8000:5432"
     environment:
-      DATA_GEN_USER: iot_temp_data_gen
-      WEB_VIEWER_USER: iot_temp_web_viewer
-    secrets:
-      - iot_temp_admin_password
-      - iot_temp_data_gen_password
-      - iot_temp_web_viewer_password
+      POSTGRES_PASSWORD: iot_admin
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./init-db.sql:/var/init-db.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready", "--quiet"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    entrypoint:
-      - "/bin/sh"
-      - -ec
-      - |
-        export POSTGRES_PASSWORD=$(cat /run/secrets/iot_temp_admin_password | xargs)
-        export DATA_GEN_PASSWORD=$(cat /run/secrets/iot_temp_data_gen_password | xargs)
-        export WEB_VIEWER_PASSWORD=$(cat /run/secrets/iot_temp_web_viewer_password | xargs)
-        apt-get update
-        apt-get install -y gettext
-        envsubst < /var/init-db.sql > /docker-entrypoint-initdb.d/init-db.sql
-        exec docker-entrypoint.sh postgres
-
-  web_app:
-    build: ./web_app
-    container_name: Iot_Weather_Data_Web_App
-    restart: on-failure
-    depends_on:
-      postgres:
-        condition: service_healthy
+  pgadmin4:
+    image: elestio/pgadmin:latest
+    container_name: PGAdmin-Web-App
+    restart: always
     ports:
-      - "8080:8080"
+      - "8001:8080"
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: iot_temp_web_viewer
-      DB_PASSWORD_FILE: /run/secrets/iot_temp_web_viewer_password
-      DB_NAME: iot_temp_db
-    secrets:
-      - iot_temp_data_gen_password
-
-  data_generator:
-    build: ./data_generator
-    container_name: Python_Iot_Weather_Data_Generator
-    restart: on-failure
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: iot_temp_data_gen
-      DB_PASSWORD_FILE: /run/secrets/iot_temp_data_gen_password
-      DB_NAME: iot_temp_db
-    secrets:
-      - iot_temp_data_gen_password
-
-secrets:
-  iot_temp_admin_password:
-    file: ./secrets/iot_temp_admin_password.txt
-  iot_temp_data_gen_password:
-    file: ./secrets/iot_temp_data_gen_password.txt
-  iot_temp_web_viewer_password:
-    file: ./secrets/iot_temp_web_viewer_password.txt
-
+      PGADMIN_DEFAULT_EMAIL: iot_admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: iot_admin
+      PGADMIN_LISTEN_PORT: 8080
 volumes:
   pgdata:

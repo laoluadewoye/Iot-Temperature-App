@@ -33,7 +33,7 @@ services:
         exec docker-entrypoint.sh postgres
 
   web_app:
-    build: ./web_app
+    build: ../web_app
     container_name: Iot_Weather_Data_Web_App
     restart: on-failure
     depends_on:
@@ -51,7 +51,7 @@ services:
       - iot_temp_data_gen_password
 
   data_generator:
-    build: ./data_generator
+    build: ../data_generator
     container_name: Python_Iot_Weather_Data_Generator
     restart: on-failure
     depends_on:
@@ -70,7 +70,7 @@ secrets:
   iot_temp_admin_password:
     file: ./secrets/iot_temp_admin_password.txt
   iot_temp_data_gen_password:
-    file: ./secrets/iot_temp_data_gen_password.txt
+    file: ../secrets/iot_temp_data_gen_password.txt
   iot_temp_web_viewer_password:
     file: ./secrets/iot_temp_web_viewer_password.txt
 

@@ -195,14 +195,14 @@ def insert_data(conn: connection, current_step: dict) -> None:
     :param conn: The connection object passed into the method.
     :param current_step: The current step of the weather data.
     """
-    
+
     with conn.cursor() as cur_cursor:
         # Create timestamp
         # utc_timestamp = datatime.now(datetime.UTC)
         # utc_timestamp = utc_timestamp.replace(microsecond=(utc_timestamp.microsecond // 1000 * 1000))
         # utc_timestamp = str(ts).replace('000+', '+')
         utc_timestamp = datetime.now(UTC)
-        
+
         # Insert data
         cur_cursor.execute(
             "INSERT INTO temperature_data (time_recorded, value_fahr) VALUES (%s, %s);",
@@ -262,27 +262,16 @@ def data_generator(conn: connection, stop_event: Event) -> None:
         sleep(1)
 
 
-def main_data_gen_loop(stop_event: Event):
+def main_data_gen_loop(stop_event: Event) -> None:
     """
     Method that starts and manages the data generation loop.
 
     :param stop_event: The event object passed into the main thread.
     """
 
-    # Get environmental variables
-    try:
-        env_db_host = getenv("DB_HOST")
-        env_db_name = getenv("DB_NAME")
-        env_db_user = getenv("DB_USER")
-        env_db_password_file = getenv("DB_PASSWORD_FILE")
-        env_db_password = open(env_db_password_file).read().strip()
-        env_db_port = getenv("DB_PORT")
-    except KeyError:
-        raise ValueError("The right environmental variables are not set.")
-
     # Connect to the database
     db_conn = connect(
-        host=env_db_host, database=env_db_name, user=env_db_user, password=env_db_password, port=env_db_port
+        host='postgres', database='postgres', user='data_generator', password='iot_data_gen', port='5432'
     )
 
     # Start the data generation thread

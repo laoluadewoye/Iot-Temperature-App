@@ -6,14 +6,11 @@ cd "$(dirname "$0")" || exit
 # Create a folder called 'secrets' if it doesn't exist
 mkdir -p secrets
 
-# Generate password for iot_temp_admin_password
-uuidgen > secrets/iot_temp_admin_password.txt
+# Generate password for data generator
+uuidgen | tr -d '\n' > secrets/iot_temp_data_gen_password.txt
 
-# Generate password for iot_temp_data_gen_password
-uuidgen > secrets/iot_temp_data_gen_password.txt
-
-# Generate password for iot_temp_web_viewer_password
-uuidgen > secrets/iot_temp_web_viewer_password.txt
+# Generate password for web viewer
+uuidgen | tr -d '\n' > secrets/iot_temp_web_view_password.txt
 
 echo "Accounts created! Starting IoT weather app..."
 

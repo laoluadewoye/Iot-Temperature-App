@@ -2,7 +2,7 @@ services:
   postgres:
     image: postgres:latest
     container_name: PostgreSQL-IoT-Weather-DB
-    restart: always
+    restart: unless-stopped
     ports:
       - "8000:5432"
     environment:
@@ -25,7 +25,7 @@ services:
   pgadmin4:
     image: elestio/pgadmin:latest
     container_name: PGAdmin-Web-App
-    restart: always
+    restart: unless-stopped
     depends_on:
       - postgres
     ports:
@@ -37,7 +37,7 @@ services:
   web-app:
     build: ./web_app
     container_name: Weather-Dashboard-Web-App
-    restart: always
+    restart: unless-stopped
     depends_on:
       - postgres
     ports:
@@ -53,7 +53,7 @@ services:
   data-generator:
     build: ./data_generator
     container_name: Weather-Data-Generator
-    restart: always
+    restart: unless-stopped
     depends_on:
       - postgres
       - web-app

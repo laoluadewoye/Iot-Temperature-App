@@ -34,6 +34,37 @@ services:
       PGADMIN_DEFAULT_EMAIL: iot_admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: iot_admin
       PGADMIN_LISTEN_PORT: 8080
+  web-app:
+    build: ./web_app
+    container_name: Weather-Dashboard-Web-App
+    restart: always
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: web_viewer
+      DB_PASSWORD_FILE: /run/secrets/iot_temp_web_view_password
+      DB_NAME: postgres
+    secrets:
+      - iot_temp_data_gen_password
+  data-generator:
+    build: ./data_generator
+    container_name: Weather-Data-Generator
+    restart: always
+    depends_on:
+      - postgres
+      - web-app
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: data_generator
+      DB_PASSWORD_FILE: /run/secrets/iot_temp_data_gen_password
+      DB_NAME: postgres
+    secrets:
+      - iot_temp_data_gen_password
 
 volumes:
   pgdata:

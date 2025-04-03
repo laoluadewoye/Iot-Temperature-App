@@ -1,7 +1,7 @@
 """Module for generating weather data."""
 
 from random import uniform
-from datetime import datetime, UTC
+from datetime import datetime, UTC, timedelta
 from typing import Union
 from os import getenv
 from psycopg2 import connect
@@ -188,21 +188,16 @@ def generate_weather_snapshot(previous_step: Union[dict, None] = None,
     return new_step, new_likelihoods
 
 
-def insert_data(conn: connection, current_step: dict) -> None:
+def insert_data(conn: connection, current_step: dict, utc_timestamp: datetime = datetime.now(UTC)) -> None:
     """
     Inserts data into each of the tables in the database.
     
     :param conn: The connection object passed into the method.
     :param current_step: The current step of the weather data.
+    :param utc_timestamp: The UTC timestamp of the current step.
     """
 
     with conn.cursor() as cur_cursor:
-        # Create timestamp
-        # utc_timestamp = datatime.now(datetime.UTC)
-        # utc_timestamp = utc_timestamp.replace(microsecond=(utc_timestamp.microsecond // 1000 * 1000))
-        # utc_timestamp = str(ts).replace('000+', '+')
-        utc_timestamp = datetime.now(UTC)
-
         # Insert data
         cur_cursor.execute(
             "INSERT INTO temperature_data (time_recorded, value_fahr) VALUES (%s, %s);",
@@ -237,7 +232,39 @@ def insert_data(conn: connection, current_step: dict) -> None:
             (utc_timestamp, current_step["precipitation"])
         )
         cur_cursor.execute('COMMIT;')
+
+        # Print message
         print('Added information recorded at', str(utc_timestamp))
+
+
+def data_instantiator(conn: connection, duration: timedelta = timedelta(weeks=1),
+                      interval: timedelta = timedelta(seconds=1),
+                      start_time: datetime = datetime.now(UTC)) -> tuple[dict, dict]:
+    """
+    Method that quickly generates sample data for a specific time period. Defaults to creating a second-by-second
+    record of one week's worth of data from the current time.
+
+    :param conn: The connection object passed into the method.
+    :param duration: The duration of the sample data.
+    :param interval: The interval between samples.
+    :param start_time: The start date and time of the sample data.
+
+    :return: The last step and likelihoods of the sample data.
+    """
+
+    end_time: datetime = start_time + duration
+
+    # Create first sample and then the rest
+    step, likelihoods = generate_weather_snapshot()
+    insert_data(conn, step, start_time)
+    start_time += interval
+    while start_time < end_time:
+        step, likelihoods = generate_weather_snapshot(step, likelihoods)
+        insert_data(conn, step, start_time)
+        start_time += interval
+
+    print("Sample data generation complete.")
+    return step, likelihoods
 
 
 def data_generator(conn: connection, stop_event: Event) -> None:
@@ -248,11 +275,9 @@ def data_generator(conn: connection, stop_event: Event) -> None:
     :param stop_event: The event object passed into the generator.
     """
 
-    # Generate first initial step and add it to database
-    step, likelihoods = generate_weather_snapshot()
-    if not stop_event.is_set():
-        insert_data(conn, step)
-    sleep(1)
+    # Create week's worth of older sample data
+    a_week_ago = datetime.now(UTC) - timedelta(weeks=1)
+    step, likelihoods = data_instantiator(conn, start_time=a_week_ago)
 
     # Get into the loop
     while not stop_event.is_set():
@@ -269,9 +294,30 @@ def main_data_gen_loop(stop_event: Event) -> None:
     :param stop_event: The event object passed into the main thread.
     """
 
+    # Get environmental variables
+    try:
+        env_db_host = getenv("DB_HOST")
+        env_db_name = getenv("DB_NAME")
+        env_db_user = getenv("DB_USER")
+        env_db_password_file = getenv("DB_PASSWORD_FILE")
+        env_db_password = open(env_db_password_file).read().strip()
+        env_db_port = getenv("DB_PORT")
+    except KeyError:
+        raise ValueError("The right environmental variables are not set.")
+
+    # Print variables
+    print(env_db_host)
+    print(env_db_name)
+    print(env_db_user)
+    print(env_db_password)
+    print(env_db_port)
+
+    # Wait a few seconds
+    sleep(3)
+
     # Connect to the database
     db_conn = connect(
-        host='postgres', database='postgres', user='data_generator', password='iot_data_gen', port='5432'
+        host=env_db_host, database=env_db_name, user=env_db_user, password=env_db_password, port=env_db_port
     )
 
     # Start the data generation thread

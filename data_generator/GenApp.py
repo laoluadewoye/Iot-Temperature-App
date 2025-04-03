@@ -90,4 +90,5 @@ def control_generator() -> tuple[Response, int]:
 
 if __name__ == '__main__':
     # app.run(host='0.0.0.0', port=8081)
+    start_data_gen_loop()
     waitress.serve(app, host='0.0.0.0', port=8081)

@@ -81,3 +81,6 @@ Historical Trends
         apt-get install -y gettext
         envsubst < /var/init-db.sql > /docker-entrypoint-initdb.d/init-db.sql
         exec docker-entrypoint.sh postgres
+
+200 MB worth of pure data ~ 6.5 million rows of timestamp-value-spatial data ~ 819k rows per table for eight tables
+~ 819k seconds worth of data ~ 13,653 minutes worth of data ~ 228 hours worth of data ~ 9 and a half days worth of data

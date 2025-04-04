@@ -29,5 +29,4 @@ def get_web_status() -> tuple[Response, int]:
 
 
 if __name__ == '__main__':
-    # app.run(host='0.0.0.0', port=8080)
     waitress.serve(app, host='0.0.0.0', port=8080)

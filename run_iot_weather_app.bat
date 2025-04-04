@@ -15,7 +15,7 @@ powershell -Command "[System.Guid]::NewGuid().ToString() | Set-Content -Path 'se
 echo Accounts created! Starting IoT weather app...
 
 :: Run Docker Compose to start up the containers
-:: docker-compose up -d
+docker-compose up -d --build
 
 :: Print message after Docker Compose runs
 echo Docker Compose has been executed. The containers are now up and running.

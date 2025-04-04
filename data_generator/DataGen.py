@@ -114,12 +114,15 @@ def gen_rain_gauge_data() -> float:
 
 
 def generate_weather_snapshot(previous_step: Union[dict, None] = None,
-                              likelihoods: Union[dict, None] = None) -> tuple[dict, dict]:
+                              likelihoods: Union[dict, None] = None, scale: float = 1) -> tuple[dict, dict]:
     """
     Generates a snapshot of weather data every second, modifying previous values gradually if provided.
 
     :param previous_step: The previous step of the weather data.
     :param likelihoods: The likelihoods of the changes in the weather data.
+    :param scale: The scale of the changes in the weather data. Used to adjust the gravity of changes over time.
+        Calculated using interval / one second. Default is 1 for 1 to 1.
+
     :return: A tuple containing the new step and the likelihoods of the changes in the weather data.
     """
 
@@ -145,34 +148,57 @@ def generate_weather_snapshot(previous_step: Union[dict, None] = None,
     # Generate new step
     if previous_step is not None:
         new_step = {
-            "temperature": previous_step["temperature"] + gen_thermostat_data() * new_likelihoods["temperature"],
+            "temperature": max(-10, min(
+                100, previous_step["temperature"] + gen_thermostat_data() * new_likelihoods["temperature"] * scale
+            )),
             "humidity": max(0, min(
-                100, previous_step["humidity"] + gen_hygrometer_data() * new_likelihoods["humidity"]
+                100, previous_step["humidity"] + gen_hygrometer_data() * new_likelihoods["humidity"] * scale
             )),
-            "pressure": previous_step["pressure"] + gen_barometer_data() * new_likelihoods["pressure"],
-            "wind_speed": max(0, previous_step["wind_speed"] + gen_anemometer_data() * new_likelihoods["wind_speed"]),
+            "pressure": max(900, min(
+                1100,previous_step["pressure"] + gen_barometer_data() * new_likelihoods["pressure"] * scale
+            )),
+            "wind_speed": max(0, min(
+                100, previous_step["wind_speed"] + gen_anemometer_data() * new_likelihoods["wind_speed"] * scale
+            )),
             "wind_direction": (previous_step["wind_direction"] +
-                               gen_wind_vane_data() * new_likelihoods["wind_direction"]) % 360,
-            "solar_radiation": max(
-                0, previous_step["solar_radiation"] + gen_pyranometer_data() * new_likelihoods["solar_radiation"]
-            ),
-            "uv_index": max(0, min(
-                11, previous_step["uv_index"] + gen_radiometer_data() * new_likelihoods["uv_index"]
+                               gen_wind_vane_data() * (new_likelihoods["wind_direction"]) * scale) % 360,
+            "solar_radiation": max(0, min(
+                1000, previous_step["solar_radiation"] + gen_pyranometer_data() * (
+                    new_likelihoods["solar_radiation"] * scale)
             )),
-            "precipitation": max(
-                0, previous_step["precipitation"] + gen_rain_gauge_data() * new_likelihoods["precipitation"]
-            )
+            "uv_index": max(0, min(
+                11, previous_step["uv_index"] + gen_radiometer_data() * new_likelihoods["uv_index"] * scale
+            )),
+            "precipitation": max(0, min(
+                80, previous_step["precipitation"] + gen_rain_gauge_data() * new_likelihoods["precipitation"] * scale
+            ))
         }
 
         # Adjust likelihoods
-        new_likelihoods['temperature'] += uniform(-0.00005, 0.00005)
-        new_likelihoods['humidity'] += uniform(-0.0005, 0.0005)
-        new_likelihoods['pressure'] += uniform(-0.0000002, 0.0000002)
-        new_likelihoods['wind_speed'] += uniform(-0.05, 0.05)
-        new_likelihoods['wind_direction'] += uniform(-0.01, 0.01)
-        new_likelihoods['solar_radiation'] += uniform(-0.0003, 0.0003)
-        new_likelihoods['uv_index'] += uniform(-0.0006, 0.0006)
-        new_likelihoods['precipitation'] += uniform(-0.04, 0.03)
+        new_likelihoods['temperature'] = max(-0.0001, min(
+            0.0001, new_likelihoods['temperature'] + uniform(-0.00005, 0.00005)
+        ))
+        new_likelihoods['humidity'] = max(-0.001, min(
+            0.001, new_likelihoods['humidity'] + uniform(-0.0005, 0.0005)
+        ))
+        new_likelihoods['pressure'] = max(-0.000001, min(
+            0.000001, new_likelihoods['pressure'] + uniform(-0.0000002, 0.0000002)
+        ))
+        new_likelihoods['wind_speed'] = max(-0.1, min(
+            0.1, new_likelihoods['wind_speed'] + uniform(-0.05, 0.05)
+        ))
+        new_likelihoods['wind_direction'] = max(-0.02, min(
+            0.02, new_likelihoods['wind_direction'] + uniform(-0.01, 0.01)
+        ))
+        new_likelihoods['solar_radiation'] = max(-0.0006, min(
+            0.0006, new_likelihoods['solar_radiation'] + uniform(-0.0003, 0.0003)
+        ))
+        new_likelihoods['uv_index'] = max(-0.0012, min(
+            0.0012, new_likelihoods['uv_index'] + uniform(-0.0006, 0.0006)
+        ))
+        new_likelihoods['precipitation'] = max(-0.1, min(
+            0.1, new_likelihoods['precipitation'] + uniform(-0.04, 0.03)
+        ))
     else:
         new_step = {
             "temperature": gen_thermostat_data(),
@@ -231,18 +257,16 @@ def insert_data(conn: connection, current_step: dict, utc_timestamp: datetime = 
             "INSERT INTO precipitation_data (time_recorded, value_nm_s) VALUES (%s, %s);",
             (utc_timestamp, current_step["precipitation"])
         )
-        cur_cursor.execute('COMMIT;')
 
-        # Print message
-        print('Added information recorded at', str(utc_timestamp))
+    # Commit and print message
+    conn.commit()
+    print('Added information recorded at', str(utc_timestamp))
 
 
-def data_instantiator(conn: connection, duration: timedelta = timedelta(weeks=1),
-                      interval: timedelta = timedelta(seconds=1),
-                      start_time: datetime = datetime.now(UTC)) -> tuple[dict, dict]:
+def data_instantiator(conn: connection, duration: timedelta, interval: timedelta,
+                      start_time: datetime) -> tuple[dict, dict, datetime]:
     """
-    Method that quickly generates sample data for a specific time period. Defaults to creating a second-by-second
-    record of one week's worth of data from the current time.
+    Method that quickly generates sample data for a specific time period.
 
     :param conn: The connection object passed into the method.
     :param duration: The duration of the sample data.
@@ -259,31 +283,41 @@ def data_instantiator(conn: connection, duration: timedelta = timedelta(weeks=1)
     insert_data(conn, step, start_time)
     start_time += interval
     while start_time < end_time:
-        step, likelihoods = generate_weather_snapshot(step, likelihoods)
+        step, likelihoods = generate_weather_snapshot(step, likelihoods, interval.total_seconds() / 1)
         insert_data(conn, step, start_time)
         start_time += interval
 
     print("Sample data generation complete.")
-    return step, likelihoods
+    return step, likelihoods, start_time
 
 
-def data_generator(conn: connection, stop_event: Event) -> None:
+def data_generator(conn: connection, stop_event: Event, hist_duration: timedelta = timedelta(weeks=1),
+                   hist_interval: timedelta = timedelta(seconds=1),
+                   hist_start_time: Union[datetime, None] = None) -> None:
     """
     Method that specifically handles the data generation loop.
 
     :param conn: The connection object passed into the generator.
     :param stop_event: The event object passed into the generator.
+    :param hist_duration: The duration of the historical data. Defaults to one week.
+    :param hist_interval: The interval between historical samples. Defaults to one second.
+    :param hist_start_time: The start date and time of the historical data. Defaults to one week ago.
     """
 
-    # Create week's worth of older sample data
-    a_week_ago = datetime.now(UTC) - timedelta(weeks=1)
-    step, likelihoods = data_instantiator(conn, start_time=a_week_ago)
+    # Create week's worth of older sample data by default
+    if hist_start_time is None:
+        hist_start_time = datetime.now(UTC) - timedelta(weeks=1)
+
+    step, likelihoods, last_time = data_instantiator(
+        conn, duration=hist_duration, interval=hist_interval, start_time=hist_start_time
+    )
 
     # Get into the loop
     while not stop_event.is_set():
-        step, likelihoods = generate_weather_snapshot(step, likelihoods)
+        last_time += hist_duration
+        step, likelihoods = generate_weather_snapshot(step, likelihoods, hist_duration.total_seconds() / 1)
         if not stop_event.is_set():
-            insert_data(conn, step)
+            insert_data(conn, step, last_time)
         sleep(1)
 
 
@@ -316,12 +350,19 @@ def main_data_gen_loop(stop_event: Event) -> None:
     sleep(3)
 
     # Connect to the database
-    db_conn = connect(
+    db_conn: connection = connect(
         host=env_db_host, database=env_db_name, user=env_db_user, password=env_db_password, port=env_db_port
     )
 
+    # Setup up historical trend variables
+    env_hist_duration: timedelta = timedelta(weeks=1)
+    env_hist_interval: timedelta = timedelta(seconds=1)
+    env_hist_start_time: datetime = datetime.now(UTC) - timedelta(weeks=1)
+
     # Start the data generation thread
-    data_generator_thread = Thread(target=data_generator, args=(db_conn, stop_event,))
+    data_generator_thread = Thread(
+        target=data_generator, args=(db_conn, stop_event, env_hist_duration, env_hist_interval, env_hist_start_time)
+    )
     data_generator_thread.start()
 
     # Wait for the data generation thread to finish and close the connection

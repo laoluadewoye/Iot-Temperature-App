@@ -85,12 +85,14 @@ html_template = """
 with open("templates/data.html", "w") as f:
     f.write(html_template)
 
-#API Endpoint for PowerBI
+
+# API Endpoint for PowerBI
 @app.get("/data")
 def get_data():
     with engine.connect() as conn:
         result = conn.execute(text("SELECT * FROM sensor_data"))  # Specify actual table name
         return [dict(row._mapping) for row in result]
+
 
 # Function to update the database at scheduled intervals
 def update_data():
@@ -100,20 +102,24 @@ def update_data():
         conn.commit()
         print(f"Database Updated at {timestamp}")
 
+
 # Initialize Scheduler
 scheduler = BackgroundScheduler()
 scheduler.add_job(update_data, "interval", minutes=5)  # Update every 5 minutes
 scheduler.start()
 
+
 @app.get("/status")
 def home():
     return {"message": "APScheduler is running!"}
+
 
 # Shutdown scheduler when API stops
 @app.on_event("shutdown")
 def shutdown_scheduler():
     scheduler.shutdown()
 
+
 # Run the FastAPI app using Uvicorn
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("WebApp:app", host="0.0.0.0", port=8080, reload=True)

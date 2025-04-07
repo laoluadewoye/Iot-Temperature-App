@@ -140,7 +140,7 @@ def generate_weather_snapshot(previous_step: Union[dict, None] = None,
             "wind_direction": uniform(-0.01, 0.01),
             "solar_radiation": uniform(-0.0003, 0.0003),
             "uv_index": uniform(-0.0006, 0.0006),
-            "precipitation": uniform(-0.04, 0.03)
+            "precipitation": uniform(-0.031, 0.03)
         }
     else:
         new_likelihoods = likelihoods
@@ -197,7 +197,7 @@ def generate_weather_snapshot(previous_step: Union[dict, None] = None,
             0.0012, new_likelihoods['uv_index'] + uniform(-0.0006, 0.0006)
         ))
         new_likelihoods['precipitation'] = max(-0.1, min(
-            0.1, new_likelihoods['precipitation'] + uniform(-0.04, 0.03)
+            0.1, new_likelihoods['precipitation'] + uniform(-0.031, 0.03)
         ))
     else:
         new_step = {
